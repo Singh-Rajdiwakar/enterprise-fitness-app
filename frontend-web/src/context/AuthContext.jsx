@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { setUnauthorizedHandler } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -38,6 +39,15 @@ export function AuthProvider({ children }) {
     }
 
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setToken(null);
+      setUser(null);
+    });
+
+    return () => setUnauthorizedHandler(null);
   }, []);
 
   const login = (newToken, userData = null) => {

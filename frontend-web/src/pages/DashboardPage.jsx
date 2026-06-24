@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Droplets, Flame, Footprints, Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import LogModal from '../components/LogModal';
+import TrainerChat from '../components/TrainerChat';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -238,6 +239,8 @@ function DashboardPage() {
           </div>
         </article>
       </section>
+
+      <TrainerChat />
 
       <LogModal
         isOpen={Boolean(activeModal)}

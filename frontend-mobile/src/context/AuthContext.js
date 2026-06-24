@@ -1,8 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import api, { setUnauthorizedHandler } from '../services/api';
+import { connectSocket, disconnectSocket } from '../services/socketService';
 
 const AuthContext = createContext(null);
+const TOKEN_STORAGE_KEY = 'token';
 
 function decodeJwtUser(token) {
   try {
@@ -28,7 +31,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function restoreSession() {
       try {
-        const storedToken = await AsyncStorage.getItem('token');
+        const storedToken = await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
 
         if (storedToken) {
           const decodedUser = decodeJwtUser(storedToken);
@@ -36,8 +39,9 @@ export function AuthProvider({ children }) {
           if (decodedUser) {
             setToken(storedToken);
             setUser(decodedUser);
+            connectSocket({ token: storedToken, email: decodedUser.email });
           } else {
-            await AsyncStorage.removeItem('token');
+            await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
           }
         }
       } finally {
@@ -48,17 +52,45 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
-  const login = async (newToken, userData = null) => {
-    await AsyncStorage.setItem('token', newToken);
-    setToken(newToken);
-    setUser(userData || decodeJwtUser(newToken));
-  };
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      disconnectSocket();
+      setToken(null);
+      setUser(null);
+    });
 
-  const logout = async () => {
-    await AsyncStorage.removeItem('token');
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  const login = useCallback(async (email, password) => {
+    const response = await api.post('/users/login', { email, password });
+    const receivedToken = response.data?.token;
+
+    if (!receivedToken) {
+      throw new Error('Login failed. No token was returned by the server.');
+    }
+
+    const authenticatedUser = decodeJwtUser(receivedToken) || { email };
+
+    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, receivedToken);
+    setToken(receivedToken);
+    setUser(authenticatedUser);
+    connectSocket({ token: receivedToken, email: authenticatedUser.email || email });
+
+    return authenticatedUser;
+  }, []);
+
+  const register = useCallback(async (details) => {
+    const response = await api.post('/users/register', details);
+    return response.data;
+  }, []);
+
+  const logout = useCallback(async () => {
+    await AsyncStorage.removeItem(TOKEN_STORAGE_KEY);
+    disconnectSocket();
     setToken(null);
     setUser(null);
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -67,9 +99,10 @@ export function AuthProvider({ children }) {
       loading,
       isAuthenticated: Boolean(token),
       login,
+      register,
       logout,
     }),
-    [user, token, loading]
+    [user, token, loading, login, register, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

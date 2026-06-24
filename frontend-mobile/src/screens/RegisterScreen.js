@@ -3,14 +3,15 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, Vi
 import FormField from '../components/FormField';
 import { GlassBackground, GlassCard } from '../components/GlassLayout';
 import PrimaryButton from '../components/PrimaryButton';
-import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { colors, spacing, typography } from '../theme/theme';
 
 function getErrorMessage(error) {
-  return error.response?.data?.message || error.response?.data?.error || 'Registration failed. Please try again.';
+  return error.response?.data?.message || error.response?.data?.error || error.message || 'Registration failed. Please try again.';
 }
 
 export default function RegisterScreen({ navigation }) {
+  const { register } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,7 @@ export default function RegisterScreen({ navigation }) {
     setIsSubmitting(true);
 
     try {
-      await api.post('/users/register', { name, email, password });
+      await register({ name, email, password });
       Alert.alert('Registration Successful');
       navigation.navigate('Login');
     } catch (error) {
