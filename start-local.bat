@@ -7,6 +7,11 @@ set "CORE_DIR=%ROOT%backend-core"
 set "REALTIME_DIR=%ROOT%backend-realtime"
 set "WEB_DIR=%ROOT%frontend-web"
 set "MOBILE_DIR=%ROOT%frontend-mobile"
+set "DOCKER_CMD=docker"
+
+if exist "%ProgramFiles%\Docker\Docker\resources\bin\docker.exe" (
+  set "DOCKER_CMD=%ProgramFiles%\Docker\Docker\resources\bin\docker.exe"
+)
 
 echo.
 echo Enterprise Fitness App - Local Ecosystem
@@ -23,7 +28,7 @@ echo.
 echo Open these commands in separate terminals if you prefer manual startup:
 echo.
 echo   1. Docker:
-echo      cd /d "%DB_DIR%" ^&^& docker compose up -d
+echo      cd /d "%DB_DIR%" ^&^& "%DOCKER_CMD%" compose up -d
 echo.
 echo   2. Spring Boot backend:
 echo      cd /d "%CORE_DIR%" ^&^& mvnw.cmd spring-boot:run
@@ -45,7 +50,7 @@ if errorlevel 2 (
 )
 
 echo Starting Docker infrastructure...
-start "Fitness Docker" cmd /k pushd "%DB_DIR%" ^&^& docker compose up -d ^&^& docker compose ps
+start "Fitness Docker" cmd /k pushd "%DB_DIR%" ^&^& "%DOCKER_CMD%" compose up -d ^&^& "%DOCKER_CMD%" compose ps
 
 echo Starting Spring Boot backend...
 start "Fitness Spring Boot" cmd /k pushd "%CORE_DIR%" ^&^& mvnw.cmd spring-boot:run

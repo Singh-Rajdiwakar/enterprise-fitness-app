@@ -65,6 +65,13 @@ cd db-infrastructure
 docker compose up -d
 ```
 
+If Windows PowerShell says `docker` is not recognized but Docker Desktop is installed, start Docker Desktop and run:
+
+```powershell
+cd db-infrastructure
+& "C:\Program Files\Docker\Docker\resources\bin\docker.exe" compose up -d
+```
+
 2. Start the Spring Boot API:
 
 ```bash
